@@ -1,0 +1,22 @@
+/**
+ * c0 程序代码
+ * 计算 0~count 的和
+ */
+
+
+int sum,count;
+int func(){
+    int i,temp;
+    i = count;
+    temp = 0;
+    while(i){
+        temp = temp + i;
+        i = i-1;
+    }
+    return (temp);
+}
+void main(){
+    scanf(count);
+    sum = func();
+    printf(sum);
+}
