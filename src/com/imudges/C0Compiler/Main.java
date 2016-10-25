@@ -27,6 +27,6 @@ public class Main {
     private void init(){
         outputInformation();
         lex = new Lex();
-        lex.readC0File();
+        lex.run();
     }
 }

@@ -4,6 +4,8 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.InputStreamReader;
 import java.io.Reader;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Scanner;
 
 /**
@@ -13,7 +15,7 @@ import java.util.Scanner;
  */
 public class Lex {
     private Scanner scanner = new Scanner(System.in);
-    
+    private List<String> sourceCode = new ArrayList<>();
 
     public enum symbol
     {
@@ -56,8 +58,42 @@ public class Lex {
         restasym,   // 赋值语句
     }
 
+    /**
+     * 判断字符类型
+     */
+    public enum wordType{
+        BasicWord,  //基本字
+        Number,     //常数
+        Delimiter,  //界符
+        Identifier, //标识符
+        Operator    //运算符
+    }
+
+    public enum charType{
+        Nul,        //空
+        Letter,     //字母
+        Delimiter,
+
+    }
+
+    private charType getType(char ch){
+        if(ch==' '||ch==10||ch==9){
+            return charType.Nul;
+        }else if(ch>='a'&&ch<='z'||ch>='A'&&ch<='Z'||ch=='_'){
+            return charType.Letter;
+        }else if(ch=='('||ch==')'||ch=='{'||ch=='}'){
+            return charType.Delimiter;
+        }
+        //
+        return null;
+    }
+
     private char getChar(){
         return ' ';
+    }
+
+    public void run(){
+        readC0File();
     }
 
     /**
@@ -78,7 +114,7 @@ public class Lex {
                 // 但如果这两个字符分开显示时，会换两次行。
                 // 因此，屏蔽掉\r，或者屏蔽\n。否则，将会多出很多空行。
                 if (((char) tempchar) != '\r') {
-                    System.out.print((char) tempchar);
+                    sourceCode.add((char) tempchar+"");
                 }
             }
             reader.close();
