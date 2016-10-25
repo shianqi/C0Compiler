@@ -1,13 +1,11 @@
 package com.imudges.C0Compiler;
 
-import java.util.Scanner;
 /**
  * Created by shianqi on 2016/10/11.
  * @author shianqi@imudges.com
  */
 public class Main {
-    private Scanner scanner = new Scanner(System.in);
-    private String c0FileName;
+    private Lex lex;
 
     public static void main(String[] args) {
         Main main = new Main();
@@ -28,8 +26,7 @@ public class Main {
      */
     private void init(){
         outputInformation();
-        System.out.print("input C0 file? ");
-        c0FileName = scanner.next();
-        System.out.println("file Name is "+c0FileName);
+        lex = new Lex();
+        lex.readC0File();
     }
 }

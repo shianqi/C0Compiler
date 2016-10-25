@@ -1,9 +1,3 @@
-/**
- * c0 程序代码
- * 计算 0~count 的和
- */
-
-
 int sum,count;
 int func(){
     int i,temp;
