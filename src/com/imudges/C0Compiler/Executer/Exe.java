@@ -9,22 +9,27 @@ import java.util.Scanner;
 import java.util.Stack;
 
 /**
- * 执行类
- * Created by killer on 2016/11/1.
+ * 解释器
+ * @author shianqi@imudges.com
+ * Created by shianqi on 2016/11/1.
  */
-public class Exe {
-    enum Dic{
+class Exe {
+    //当前层数基地址
+    private int origin = 0;
+    //当前执行指令标号
+    private int current = 0;
+    private enum Dic{
         LIT, LOD, STO, CAL, INT, JMP, JPC,
         ADD, SUB, MUL, DIV, RED, WRT, RET
     }
-    class Dictate{
-        public Dic dic;
-        public int t;
-        public int a;
+    private class Dictate{
+        private Dic dic;
+        private int t;
+        private int a;
     }
     private Scanner scanner = new Scanner(System.in);
     private ArrayList<Dictate> dictateList = new ArrayList<>();
-    private Stack<Integer> runStack = new Stack<Integer>();
+    private Stack<Integer> runStack = new Stack<>();
 
     /**
      * LIT 0 a
@@ -32,8 +37,8 @@ public class Exe {
      * @param t 0
      * @param a 常数值
      */
-    public void dic_LIT(int t, int a){
-
+    private void dic_LIT(int t, int a){
+        runStack.push(a);
     }
 
     /**
@@ -42,8 +47,12 @@ public class Exe {
      * @param t 层数
      * @param a 相对地址
      */
-    public void dic_LOD(int t, int a){
-
+    private void dic_LOD(int t, int a){
+        if(t==0){
+            runStack.push(runStack.get(a));
+        }else{
+            runStack.push(runStack.get(a+origin));
+        }
     }
 
     /**
@@ -52,17 +61,27 @@ public class Exe {
      * @param t 层数
      * @param a 相对地址
      */
-    public void dic_STO(int t, int a){
-
+    private void dic_STO(int t, int a){
+        if(t==0){
+            runStack.set(a, runStack.get(runStack.size()-1));
+        }else{
+            runStack.set(origin + a, runStack.get(runStack.size()-1));
+        }
     }
 
     /**
-     *
-     * @param t
-     * @param a
+     * cal 0 a
+     * 调用函数，a为函数地址
+     * @param t 0
+     * @param a 函数地址
      */
-    public void dic_CAL(int t, int a){
-
+    private void dic_CAL(int t, int a){
+        //修改DL 和 RL
+        int base = runStack.size();
+        runStack.push(origin);
+        runStack.push(current+1);
+        origin = base;
+        current = a - 1;
     }
 
     /**
@@ -71,7 +90,7 @@ public class Exe {
      * @param t 0
      * @param a 数据区数量
      */
-    public void dic_INT(int t, int a){
+    private void dic_INT(int t, int a){
         for(int i=0;i<a;i++){
             runStack.push(0);
             if(runStack.size()>=500){
@@ -82,57 +101,77 @@ public class Exe {
     }
 
     /**
-     *
-     * @param t
-     * @param a
+     * JMP 0 a
+     * 无条件跳转至a地址
+     * @param t 0
+     * @param a 跳转到的地址
      */
-    public void dic_JMP(int t, int a){
-
+    private void dic_JMP(int t, int a){
+        current = a - 1;
     }
 
     /**
-     *
-     * @param t
-     * @param a
+     * jpc 0 a
+     * 条件跳转，当栈顶值为0，则跳转至a地址，否则顺序执行
+     * @param t 0
+     * @param a 跳转地址
      */
-    public void dic_JPC(int t, int a){
-
+    private void dic_JPC(int t, int a){
+        if(runStack.get(runStack.size()-1)==0){
+            current = a - 1;
+        }
     }
 
     /**
-     *
-     * @param t
-     * @param a
+     * add 0 0
+     * 次栈顶与栈顶相加，退两个栈元素，结果值进栈
+     * @param t 0
+     * @param a 0
      */
-    public void dic_ADD(int t, int a){
-
+    private void dic_ADD(int t, int a){
+        int val_a = runStack.get(runStack.size()-1);
+        runStack.pop();
+        int val_b = runStack.get(runStack.size()-1);
+        runStack.set(runStack.size()-1, val_a+val_b);
     }
 
     /**
-     *
-     * @param t
-     * @param a
+     * sub 0 0
+     * 次栈顶减去栈顶，退两个栈元素，结果值进栈
+     * @param t 0
+     * @param a 0
      */
-    public void dic_SUB(int t, int a){
-
+    private void dic_SUB(int t, int a){
+        int val_a = runStack.get(runStack.size()-1);
+        runStack.pop();
+        int val_b = runStack.get(runStack.size()-1);
+        runStack.set(runStack.size()-1, val_b-val_a);
     }
 
     /**
-     *
-     * @param t
-     * @param a
+     * mul 0 0
+     * 次栈顶乘以栈顶，退两个栈元素，结果值进栈
+     * @param t 0
+     * @param a 0
      */
-    public void dic_MUL(int t, int a){
-
+    private void dic_MUL(int t, int a){
+        int val_a = runStack.get(runStack.size()-1);
+        runStack.pop();
+        int val_b = runStack.get(runStack.size()-1);
+        runStack.set(runStack.size()-1, val_b*val_a);
     }
 
     /**
-     *
-     * @param t
-     * @param a
+     * div
+     * 次栈顶除以栈顶，退两个栈元素，结果值进栈
+     * @param t 0
+     * @param a 0
      */
-    public void dic_DIV(int t, int a){
-
+    private void dic_DIV(int t, int a){
+        int val_a = runStack.get(runStack.size()-1);
+        runStack.pop();
+        int val_b = runStack.get(runStack.size()-1);
+        runStack.set(runStack.size()-1, val_b/val_a);
     }
 
     /**
@@ -141,12 +180,8 @@ public class Exe {
      * @param t 0
      * @param a 0
      */
-    public void dic_RED(int t, int a){
-        if(runStack.empty()){
-            System.out.println("读入栈失败，栈为空");
-        }else{
-            runStack.set(runStack.size()-1,scanner.nextInt());
-        }
+    private void dic_RED(int t, int a){
+        runStack.push(scanner.nextInt());
     }
 
     /**
@@ -155,7 +190,7 @@ public class Exe {
      * @param t 0
      * @param a 0
      */
-    public void dic_WRT(int t, int a){
+    private void dic_WRT(int t, int a){
         if(runStack.empty()){
             System.out.println("读入栈失败，栈为空");
         }else{
@@ -164,25 +199,78 @@ public class Exe {
     }
 
     /**
-     *
-     * @param t
-     * @param a
+     * ret 0 0
+     * 函数调用结束后,返回调用点并退栈
+     * 如果当前为0层，则运行结束
+     * @param t 0
+     * @param a 0
      */
-    public void dic_RET(int t, int a){
+    private void dic_RET(int t, int a){
+        if(origin==0){
+            current = 999999;
+            return;
+        }
+        int returnValue = runStack.get(runStack.size()-1);
+        current = runStack.get(origin+1)-1;
+        int originTemp = origin;
+        origin = runStack.get(origin);
+        while(runStack.size()>originTemp){
+            runStack.pop();
+        }
+        runStack.push(returnValue);
+    }
 
+    /**
+     * 初始化函数
+     */
+    void init(){
+        System.out.println("input the C0Target file name");
+        readFileByLines(scanner.next());
+        execute();
+    }
+
+    /**
+     * 执行函数
+     */
+    private void execute(){
+        while(current<dictateList.size()){
+            analyse(current);
+            current++;
+        }
+    }
+
+    private void analyse(int index){
+        int t = dictateList.get(index).t;
+        int a = dictateList.get(index).a;
+        switch (dictateList.get(index).dic){
+            case LIT : dic_LIT(t,a); break;
+            case LOD : dic_LOD(t,a); break;
+            case STO : dic_STO(t,a); break;
+            case CAL : dic_CAL(t,a); break;
+            case INT : dic_INT(t,a); break;
+            case JMP : dic_JMP(t,a); break;
+            case JPC : dic_JPC(t,a); break;
+            case ADD : dic_ADD(t,a); break;
+            case SUB : dic_SUB(t,a); break;
+            case MUL : dic_MUL(t,a); break;
+            case DIV : dic_DIV(t,a); break;
+            case RED : dic_RED(t,a); break;
+            case WRT : dic_WRT(t,a); break;
+            case RET : dic_RET(t,a); break;
+        }
     }
 
     /**
      * 读取文件信息
      * @param fileName 文件名字
      */
-    public void readFileByLines(String fileName) {
+    private void readFileByLines(String fileName) {
         File file = new File(fileName);
         BufferedReader reader = null;
         try {
             System.out.println("以行为单位读取文件内容，一次读一整行：");
             reader = new BufferedReader(new FileReader(file));
-            String tempString = null;
+            String tempString;
             int line = 0;
             // 一次读入一行，直到读入null为文件结束
             while ((tempString = reader.readLine()) != null) {
@@ -212,7 +300,7 @@ public class Exe {
                 try {
                     reader.close();
                 } catch (IOException e1) {
-
+                    System.out.print("文档关闭失败");
                 }
             }
         }
