@@ -239,6 +239,10 @@ class Exe {
         }
     }
 
+    /**
+     * 指令分析
+     * @param index 指令编号
+     */
     private void analyse(int index){
         int t = dictateList.get(index).t;
         int a = dictateList.get(index).a;
