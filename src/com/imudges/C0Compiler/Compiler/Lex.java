@@ -91,36 +91,4 @@ public class Lex {
     private char getChar(){
         return ' ';
     }
-
-    public void run(){
-        readC0File();
-    }
-
-    /**
-     * 文件读写模块
-     */
-    public void readC0File(){
-        String c0FileName = "";
-        System.out.print("input C0 file? ");
-        c0FileName = scanner.next();
-        System.out.println("file Name is "+c0FileName);
-        File file = new File(c0FileName);
-        Reader reader = null;
-        try{
-            reader = new InputStreamReader(new FileInputStream(file));
-            int tempchar;
-            while ((tempchar = reader.read()) != -1) {
-                // 对于windows下，\r\n这两个字符在一起时，表示一个换行。
-                // 但如果这两个字符分开显示时，会换两次行。
-                // 因此，屏蔽掉\r，或者屏蔽\n。否则，将会多出很多空行。
-                if (((char) tempchar) != '\r') {
-                    sourceCode.add((char) tempchar+"");
-                }
-            }
-            reader.close();
-        }catch (Exception e){
-            e.printStackTrace();
-            System.out.println("Error: 系统找不到指定文件!");
-        }
-    }
 }
