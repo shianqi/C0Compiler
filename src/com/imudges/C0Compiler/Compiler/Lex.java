@@ -5,6 +5,7 @@ import java.io.FileInputStream;
 import java.io.InputStreamReader;
 import java.io.Reader;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Scanner;
 
@@ -14,9 +15,14 @@ import java.util.Scanner;
  * c0编译器词法分析类
  */
 public class Lex {
+    //源程序单词缓存
     private String sourceCodeTemp;
+    //行数
     private int row;
+    //缓存单词字符指针
     private int index;
+    //变量最大长度
+    private int symMaxLength = 20;
 
     public Lex(){
         sourceCodeTemp = "";
@@ -24,6 +30,15 @@ public class Lex {
         index = 0;
         getSym();
     }
+
+    public String[] reservedWord = {
+            "main",
+            "void",
+            "if",
+            "while",
+            "return",
+            "int",
+    };
 
     public enum symbol
     {
@@ -33,7 +48,6 @@ public class Lex {
         ifstasym,   // 如果语句
         whilestasym,// 循环语句
         resym,      // return
-        varsym,     // 变量定义
         intsym,     // 整型
         nul,        // 未知
 
@@ -77,11 +91,10 @@ public class Lex {
         Operator    //运算符
     }
 
-    public enum charType{
+    private enum charType{
         Nul,        //空
         Letter,     //字母
-        Delimiter,
-
+        Number,     //数字类型
     }
 
     private charType getType(char ch){
@@ -89,33 +102,89 @@ public class Lex {
             return charType.Nul;
         }else if(ch>='a'&&ch<='z'||ch>='A'&&ch<='Z'||ch=='_'){
             return charType.Letter;
-        }else if(ch=='('||ch==')'||ch=='{'||ch=='}'){
-            return charType.Delimiter;
+        }else if(ch>='0'&&ch<='9'){
+            return charType.Number;
         }
-        //
         return null;
     }
 
+    /**
+     * 获取下个字符
+     * @return 下一个字符，当返回'.'时表示文档结束
+     */
     private char getChar(){
-        if(sourceCodeTemp.equals("")){
-            if(row+1>=Main.sourceCode.size()){
-                return ' ';
+        while(sourceCodeTemp.equals("")){
+            if(row>=Main.sourceCode.size()){
+                return '.';
             }else{
                 sourceCodeTemp = Main.sourceCode.get(row);
+                row++;
+                index = 0;
             }
         }
-        //
-        return ' ';
+        char temp = sourceCodeTemp.charAt(index);
+        index++;
+        if(index>=sourceCodeTemp.length()){
+            sourceCodeTemp = "";
+        }
+        return temp;
     }
 
+
+    /**
+     * 获取下一个单词
+     */
     private void getSym(){
+
+        char ch = getChar();
         while(true){
-            char ch = getChar();
-            if(ch==' '){
+            if(ch=='.'){
                 System.out.println("文档结束！");
                 break;
             }else{
-                System.out.println(ch);
+                if(getType(ch)!=charType.Nul){
+                    //如果第一个单词是字母
+                    if(getType(ch)==charType.Letter){
+                        String stringTemp = "";
+                        stringTemp+=ch;
+                        ch = getChar();
+                        while(getType(ch)==charType.Number||getType(ch)==charType.Letter){
+                            stringTemp+=ch;
+                            ch = getChar();
+                        }
+                        if(Arrays.asList(reservedWord).contains(stringTemp)){
+                            System.out.println("保留字： "+stringTemp);
+                        }else{
+                            System.out.println("单词： "+stringTemp);
+                        }
+                    }else if(getType(ch)==charType.Number){
+                        //如果第一个字母是数字
+                        int numberTemp = ch - '0';
+                        ch = getChar();
+                        while(getType(ch)==charType.Number){
+                            numberTemp = numberTemp*10+(ch-'0');
+                            ch = getChar();
+                        }
+                        System.out.println("数字： "+numberTemp);
+                    }else if(ch=='('){
+                        System.out.println("符号： "+ch);
+                        ch = getChar();
+                    }else if(ch==')'){
+                        System.out.println("符号： "+ch);
+                        ch = getChar();
+                    }else if(ch=='{'){
+                        System.out.println("符号： "+ch);
+                        ch = getChar();
+                    }else if(ch=='}'){
+                        System.out.println("符号： "+ch);
+                        ch = getChar();
+                    }else{
+                        System.out.print(ch);
+                        ch = getChar();
+                    }
+                }else{
+                    ch = getChar();
+                }
             }
         }
     }
