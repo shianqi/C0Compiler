@@ -14,8 +14,16 @@ import java.util.Scanner;
  * c0编译器词法分析类
  */
 public class Lex {
-    private Scanner scanner = new Scanner(System.in);
-    private List<String> sourceCode = new ArrayList<>();
+    private String sourceCodeTemp;
+    private int row;
+    private int index;
+
+    public Lex(){
+        sourceCodeTemp = "";
+        row = 0;
+        index = 0;
+        getSym();
+    }
 
     public enum symbol
     {
@@ -89,6 +97,26 @@ public class Lex {
     }
 
     private char getChar(){
+        if(sourceCodeTemp.equals("")){
+            if(row+1>=Main.sourceCode.size()){
+                return ' ';
+            }else{
+                sourceCodeTemp = Main.sourceCode.get(row);
+            }
+        }
+        //
         return ' ';
+    }
+
+    private void getSym(){
+        while(true){
+            char ch = getChar();
+            if(ch==' '){
+                System.out.println("文档结束！");
+                break;
+            }else{
+                System.out.println(ch);
+            }
+        }
     }
 }

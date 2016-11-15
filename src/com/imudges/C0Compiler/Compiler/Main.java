@@ -19,6 +19,8 @@ public class Main {
     public static void main(String[] args) {
         Main main = new Main();
         main.init();
+
+
     }
 
     /**
@@ -36,12 +38,13 @@ public class Main {
     private void init(){
         outputInformation();
         sourceCode = new ArrayList<>();
-        lex = new Lex();
-
         initFile();
-        lex.run();
+        lex = new Lex();
     }
 
+    /**
+     * 初始化文件
+     */
     private void initFile(){
         while (true){
             System.out.println("input the c0 file name");
@@ -53,19 +56,19 @@ public class Main {
         }
     }
 
+    /**
+     * 读取文件
+     * @param fileName 文件名称
+     * @return 读取成功返回true，否则返回false
+     */
     private boolean readC0File(String fileName) {
         File file = new File(fileName);
         BufferedReader reader = null;
         try {
-//            System.out.println("以行为单位读取文件内容，一次读一整行：");
             reader = new BufferedReader(new FileReader(file));
             String tempString;
-            int line = 0;
-            // 一次读入一行，直到读入null为文件结束
             while ((tempString = reader.readLine()) != null) {
-                // 显示行号
-                System.out.println(line+": "+tempString);
-                line++;
+                sourceCode.add(tempString);
             }
             reader.close();
             return true;
