@@ -90,14 +90,15 @@ class Exe {
      * @param t 0
      * @param a 数据区数量
      */
-    private void dic_INT(int t, int a){
+    private int dic_INT(int t, int a){
         for(int i=0;i<a;i++){
             runStack.push(0);
             if(runStack.size()>=500){
-                System.out.println("栈满500");
-                return;
+                //System.out.println("栈满500");
+                return 4;
             }
         }
+        return 0;
     }
 
     /**
@@ -167,11 +168,15 @@ class Exe {
      * @param t 0
      * @param a 0
      */
-    private void dic_DIV(int t, int a){
+    private int dic_DIV(int t, int a){
         int val_a = runStack.get(runStack.size()-1);
         runStack.pop();
+        if(val_a==0){
+            return 1;
+        }
         int val_b = runStack.get(runStack.size()-1);
         runStack.set(runStack.size()-1, val_b/val_a);
+        return 0;
     }
 
     /**
@@ -190,11 +195,13 @@ class Exe {
      * @param t 0
      * @param a 0
      */
-    private void dic_WRT(int t, int a){
+    private int dic_WRT(int t, int a){
         if(runStack.empty()){
-            System.out.println("读入栈失败，栈为空");
+            //System.out.println("读入栈失败，栈为空");
+            return 4;
         }else{
             System.out.println(runStack.peek());
+            return 0;
         }
     }
 
@@ -234,8 +241,12 @@ class Exe {
      */
     private void execute(){
         while(current<dictateList.size()){
-            analyse(current);
-            current++;
+            if(!Error.errFlag){
+                analyse(current);
+                current++;
+            }else {
+                return;
+            }
         }
     }
 
@@ -251,15 +262,35 @@ class Exe {
             case LOD : dic_LOD(t,a); break;
             case STO : dic_STO(t,a); break;
             case CAL : dic_CAL(t,a); break;
-            case INT : dic_INT(t,a); break;
+            case INT :{
+                int code=dic_INT(t,a);
+                if(code!=0){
+                    Error.ShowErrMsg(code,"所在行数为:第"+index+"行");
+                }
+                return;
+            }
             case JMP : dic_JMP(t,a); break;
             case JPC : dic_JPC(t,a); break;
             case ADD : dic_ADD(t,a); break;
             case SUB : dic_SUB(t,a); break;
             case MUL : dic_MUL(t,a); break;
-            case DIV : dic_DIV(t,a); break;
+            case DIV : {
+                int code=dic_DIV(t,a);
+               if(code!=0){
+                   Error.ShowErrMsg(code,"所在行数为:第"+index+"行");
+                   return;
+               }
+                break;
+            }
             case RED : dic_RED(t,a); break;
-            case WRT : dic_WRT(t,a); break;
+            case WRT :{
+                int code=dic_WRT(t,a);
+                if(code!=0){
+                    Error.ShowErrMsg(code,"所在行数为:第"+index+"行");
+                    return;
+                }
+                break;
+            }
             case RET : dic_RET(t,a); break;
         }
     }
