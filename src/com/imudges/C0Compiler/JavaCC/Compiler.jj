@@ -2,25 +2,6 @@
  * All rights reserved.
  */
 
-options {
-  LOOKAHEAD = 1;
-  CHOICE_AMBIGUITY_CHECK = 2;
-  OTHER_AMBIGUITY_CHECK = 1;
-  STATIC = true;
-  DEBUG_PARSER = false;
-  DEBUG_LOOKAHEAD = false;
-  DEBUG_TOKEN_MANAGER = false;
-  ERROR_REPORTING = true;
-  JAVA_UNICODE_ESCAPE = false;
-  UNICODE_INPUT = false;
-  IGNORE_CASE = false;
-  USER_TOKEN_MANAGER = false;
-  USER_CHAR_STREAM = false;
-  BUILD_PARSER = true;
-  BUILD_TOKEN_MANAGER = true;
-  SANITY_CHECK = true;
-  FORCE_LA_CHECK = false;
-}
 
 PARSER_BEGIN(Compiler)
 
@@ -30,49 +11,73 @@ public class Compiler {
   /** Main entry point. */
   public static void main(String args[]) throws ParseException {
     Compiler parser = new Compiler(System.in);
-    parser.Input();
+    parser.procedure();
   }
 
 }
 
 PARSER_END(Compiler)
 
-//-----------------------------
-/** int */
-void Int_CC():
-{}
+/** 空字符过滤*/
+SKIP:
 {
-    "int"
+" " | "\t" | "\n" | "\r"
 }
 
-/** id */
-void Id_CC():
-{}
+/** TOKEN定义 */
+TOKEN:
 {
-    "id"
-}
-
-/** void */
-void Void_CC():
-{}
-{
-    "void"
-}
-//-----------------------------
-
-/** 输入过滤. */
-void Input_CC() :
-{}
-{
-  Program_CC() ("\n"|"\r")* <EOF>
+    <IF_TO : "if">
+    |
+    <INT_TO : "int">
+    |
+    <VOID_TO : "void">
+    |
+    <ELSE_TO : "else">
+    |
+    <MAIN_TO : "main">
+    |
+    <WHILE_TO : "while">
+    |
+    <SCANF_TO : "scanf">
+    |
+    <PRINTF_TO : "printf">
+    |
+    <RETURN_TO : "return">
+    |
+    <ID_TO : ["a"-"z","A"-"Z","_"](["a"-"z","A"-"Z","_","0"-"9"])*>
+    |
+    <NUM_TO : (["0"-"9"])+>
+    |
+    <DOUHAO_TO: ",">
+    |
+    <FENHAO_TO: ";">
+    |
+    <JIAHAO_TO: "+">
+    |
+    <JIANHAO_TO: "-">
+    |
+    <CHENGHAO_TO: "*">
+    |
+    <CHUHAO_TO: "/">
+    |
+    <DENGHAO_TO: "=">
+    |
+    <LBRACE_TO: "{">
+    |
+    <RBRACE_TO: "}">
+    |
+    <LPARENTHESES_TO: "(">
+    |
+    <RPARENTHESES_TO: ")">
 }
 
 /** 程序入口. */
-void Program_CC() :
+void procedure() :
 {}
 {
     //[<变量定义部分>] {<自定义函数定义部分>} <主函数>
-    [VarDefinition_CC()] ( FunctionDefinition_CC() )* MainFunction_CC()
+    [LOOKAHEAD(2)VarDefinition_CC()] ( LOOKAHEAD(2)FunctionDefinition_CC() )* MainFunction_CC() <EOF>
 }
 
 /** 变量定义部分. */
@@ -80,15 +85,17 @@ void VarDefinition_CC() :
 {}
 {
     //int id {, id};
-    Int_CC()Id_CC() ("," Id_CC())*
+    <INT_TO> <ID_TO> (<DOUHAO_TO> <ID_TO>)* <FENHAO_TO>
 }
 
 /** 自定义函数定义部分. */
 void FunctionDefinition_CC() :
-{}
+{
+
+}
 {
     //( int id | void id) '(' ')' <分程序>
-    (Int_CC() Id_CC()|Void_CC() Id_CC()) "(" ")" PartProgram_CC()
+    (<INT_TO> <ID_TO> | <VOID_TO> <ID_TO>) <LPARENTHESES_TO> <RPARENTHESES_TO> PartProgram_CC()
 }
 
 /** 主函数部分 */
@@ -96,7 +103,7 @@ void MainFunction_CC() :
 {}
 {
     //void main'(' ')' <分程序>
-    Void_CC() "main" "(" ")" PartProgram_CC()
+    <VOID_TO> <MAIN_TO> <LPARENTHESES_TO> <RPARENTHESES_TO> PartProgram_CC()
 }
 
 /** 分程序 */
@@ -104,7 +111,7 @@ void PartProgram_CC():
 {}
 {
     //'{' [<变量定义部分>] <语句序列> '}'
-    "{" [VarDefinition_CC()] WordList_CC() "}"
+    <LBRACE_TO> [LOOKAHEAD(2)VarDefinition_CC()] WordList_CC() <RBRACE_TO>
 }
 
 /** 语句序列 */
@@ -119,17 +126,33 @@ void WordList_CC():
 void Word_CC():
 {}
 {
-    //<条件语句>｜<循环语句> | '{'<语句序列>'}' | <自定义函数调用语句> | <赋值语句> | <返回语句> | <读语句> | <写语句> | ;
-    IfWord_CC() | ForWord_CC() | "{" WordList_CC() "}" | DefinitionFunctionCallWord_CC() | EvaluateWord_CC()
-    | ReturnWord_CC() | ScanfWord_CC() | PrintfWord_CC() | ";"
+    //<条件语句>｜<循环语句> | '{'<语句序列>'}' | <自定义函数调用语句> |
+    //<赋值语句> | <返回语句> | <读语句> | <写语句> | ;
+    IfWord_CC()
+    |
+    ForWord_CC()
+    |
+    <LBRACE_TO> WordList_CC() <RBRACE_TO>
+    |
+    LOOKAHEAD(2)DefinitionFunctionCallWord_CC()
+    |
+    EvaluateWord_CC()
+    |
+    ReturnWord_CC()
+    |
+    ScanfWord_CC()
+    |
+    PrintfWord_CC()
+    |
+    <FENHAO_TO>
 }
 
 /** 条件语句 */
 void IfWord_CC():
 {}
 {
-    //if '('<表达式>')' | <语句> [else <语句> ]
-    ""
+    //if '('<表达式>')' <语句> [else <语句> ]
+    <IF_TO> <LPARENTHESES_TO> Expression_CC() <RPARENTHESES_TO> Word_CC() [LOOKAHEAD(2) <ELSE_TO> Word_CC()]
 }
 
 /** 循环语句 */
@@ -137,7 +160,7 @@ void ForWord_CC():
 {}
 {
     //while '(' <表达式>')' <语句>
-    ""
+    <WHILE_TO> <LPARENTHESES_TO> Expression_CC() <RPARENTHESES_TO> Word_CC()
 }
 
 /** 自定义函数调用语句 */
@@ -145,7 +168,7 @@ void DefinitionFunctionCallWord_CC():
 {}
 {
     //<自定义函数调用>
-    ""
+    FunctionDefinition_CC()
 }
 
 /** 赋值语句 */
@@ -153,7 +176,7 @@ void EvaluateWord_CC():
 {}
 {
     //id = <表达式>;
-    ""
+    <ID_TO> <DENGHAO_TO> Expression_CC() <FENHAO_TO>
 }
 
 /** 返回语句 */
@@ -161,7 +184,7 @@ void ReturnWord_CC():
 {}
 {
     //return ['(' <表达式> ')'] ;
-    ""
+    <RETURN_TO> [<LPARENTHESES_TO> Expression_CC() <RPARENTHESES_TO>] <FENHAO_TO>
 }
 
 /** 读语句 */
@@ -169,7 +192,7 @@ void ScanfWord_CC():
 {}
 {
     //scanf '(' id ')';
-    ""
+    <SCANF_TO> <LPARENTHESES_TO> <ID_TO> <RPARENTHESES_TO> <FENHAO_TO>
 }
 
 /** 写语句 */
@@ -177,7 +200,7 @@ void PrintfWord_CC():
 {}
 {
     // printf '(' [ <表达式>] ')';
-    ""
+    <PRINTF_TO> <LPARENTHESES_TO> [Expression_CC()] <RPARENTHESES_TO> <FENHAO_TO>
 }
 
 /** 表达式 */
@@ -185,7 +208,7 @@ void Expression_CC():
 {}
 {
     //[+｜-] <项> { (+｜-) <项>}
-    ""
+    [<JIAHAO_TO>|<JIANHAO_TO>] Sum_CC() ( (<JIAHAO_TO>|<JIANHAO_TO>) Sum_CC())*
 }
 
 /** 项 */
@@ -193,7 +216,7 @@ void Sum_CC():
 {}
 {
     //<因子>｛(*｜/) <因子>｝
-    ""
+    Divisor_CC() ((<CHENGHAO_TO> | <CHUHAO_TO>) Divisor_CC())*
 }
 
 /** 因子 */
@@ -201,7 +224,13 @@ void Divisor_CC():
 {}
 {
     //id｜'(' <表达式>')' | num | <自定义函数调用>
-    ""
+    LOOKAHEAD(2)DefinitionFunction_CC()
+    |
+    <LPARENTHESES_TO> Expression_CC() <RPARENTHESES_TO>
+    |
+    <NUM_TO>
+    |
+    LOOKAHEAD(2)<ID_TO>
 }
 
 /** 自定义函数调用 */
@@ -209,5 +238,5 @@ void DefinitionFunction_CC():
 {}
 {
     //id '(' ')'
-    ""
+    <ID_TO> <LPARENTHESES_TO> <RPARENTHESES_TO>
 }

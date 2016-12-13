@@ -11,6 +11,6 @@ int func(){
 }
 void main(){
     scanf(count);
-    sum = func();
+    sum = +func();
     printf(sum);
 }
