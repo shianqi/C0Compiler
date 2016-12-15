@@ -6,6 +6,16 @@
 public class SymbolItem {
     public SymbolItem(SymbolType type) {
         this.type = type;
+        this.name = "";
+        this.val = 0;
+        this.level = 0;
+        this.adr = 0;
+        this.size = 0;
+        this.returnType = 0;
+    }
+
+    public String toString(){
+        return type.toString()+"\t"+name+"\t"+adr+"\t"+returnType;
     }
 
     public enum SymbolType{

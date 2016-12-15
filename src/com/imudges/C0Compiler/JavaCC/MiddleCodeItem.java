@@ -20,4 +20,7 @@ public class MiddleCodeItem{
     public String toString(){
         return codeType.toString()+" "+arg0+" "+arg1;
     }
+    public String toOutString(){
+        return codeType.toString()+"\t"+arg0+"\t"+arg1;
+    }
 }

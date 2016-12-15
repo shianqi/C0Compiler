@@ -4,6 +4,7 @@
 
 PARSER_BEGIN(Compiler)
 import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.io.InputStream;
 import java.util.ArrayList;
 /** Simple brace matcher. */
@@ -87,12 +88,37 @@ public class Compiler {
     public static void outPutMiddleCodeList(){
         for(int i=0;i<middleCodeList.size();i++){
             MiddleCodeItem m = middleCodeList.get(i);
-            System.out.println("**"+m.toString());
+            System.out.println("**"+i+"\t"+m.toOutString());
+        }
+    }
+    /**
+     * 输出分程序列表
+     */
+    public static void outPutListPart(){
+        for(int i=0;i<listPart.size();i++){
+            System.out.println("--"+i+"\t"+listPart.get(i).toString());
+        }
+    }
+    /**
+     * 输出目标代码
+     */
+    public static void outPutGoalCode(){
+        FileOutputStream out;
+        try{
+            out = new FileOutputStream("D://goalCode.txt");
+            for(int i=0;i<middleCodeList.size();i++){
+                MiddleCodeItem m = middleCodeList.get(i);
+                out.write(m.toString().getBytes("GBK"));
+                out.write("\r\n".getBytes("GBK"));
+            }
+            out.close();
+        }catch(Exception e){
+            
         }
     }
     /** 
      * 添加自定义函数 
-     * @param int 1-return int          0-return void
+     * @param type 1-return int          0-return void
      */
     public static void addPartFunction(Token t,int type){
         SymbolItem symbolItem = new SymbolItem(SymbolItem.SymbolType.functionSym);
@@ -150,6 +176,18 @@ public class Compiler {
                 }
             }
             ExError.ShowErrMsg(3,"The variable "+id+" was not defined");
+        }
+    }
+    public static void getFunctionById(Token t){
+        for(int i=0;i<listPart.size();i++){
+            SymbolItem item = listPart.get(i);
+            if(item.getType()==SymbolItem.SymbolType.functionSym){
+                if(item.getName().equals(t.image)){
+                    MiddleCodeItem middleCodeItem = new MiddleCodeItem(MiddleCodeItem.CodeType.CAL,0,item.getAdr());
+                    middleCodeList.add(middleCodeItem);
+                    return;
+                }
+            }
         }
     }
 }
@@ -215,7 +253,15 @@ void procedure() :
 {}
 {
     //[<变量定义部分>] {<自定义函数定义部分>} <主函数>
-    [LOOKAHEAD(2)VarDefinition_CC(0)] ( LOOKAHEAD(2)FunctionDefinition_CC() )* MainFunction_CC() <EOF>{outPutMiddleCodeList();}
+    [LOOKAHEAD(2)VarDefinition_CC(0)] 
+    ( LOOKAHEAD(2)FunctionDefinition_CC() )* 
+    MainFunction_CC() 
+    <EOF>
+    {
+        outPutMiddleCodeList();
+        outPutListPart();
+        outPutGoalCode();
+    }
 }
 
 /** 变量定义部分. */
@@ -258,7 +304,12 @@ void MainFunction_CC() :
 {}
 {
     //void main'(' ')' <分程序>
-    <VOID_TO> <MAIN_TO> <LPARENTHESES_TO> <RPARENTHESES_TO> PartProgram_CC()
+    <VOID_TO> <MAIN_TO> <LPARENTHESES_TO> <RPARENTHESES_TO>
+    {
+        int mainAddress = middleCodeList.size();
+        middleCodeList.get(1).arg1 = mainAddress;
+    }
+    PartProgram_CC()
 }
 
 /** 
@@ -326,10 +377,28 @@ void IfWord_CC():
 
 /** 循环语句 */
 void ForWord_CC():
-{}
+{
+    int whileBegin;
+    int whileEnd;
+}
 {
     //while '(' <表达式>')' <语句>
-    <WHILE_TO> <LPARENTHESES_TO> Expression_CC() <RPARENTHESES_TO> Word_CC()
+    <WHILE_TO>
+    {
+        whileBegin = middleCodeList.size();
+    }
+    <LPARENTHESES_TO> Expression_CC()
+    {
+        MiddleCodeItem item = new MiddleCodeItem(MiddleCodeItem.CodeType.JPC,0,whileBegin);
+        middleCodeList.add(item);
+    }
+    <RPARENTHESES_TO> Word_CC()
+    {
+        MiddleCodeItem item2 = new MiddleCodeItem(MiddleCodeItem.CodeType.JMP,0,whileBegin);
+        middleCodeList.add(item2);
+        whileEnd = middleCodeList.size();
+        middleCodeList.get(whileBegin+1).arg1 = whileEnd;
+    }
 }
 
 /** 自定义函数调用语句 */
@@ -365,12 +434,15 @@ void ReturnWord_CC():
 
 /** 读语句 */
 void ScanfWord_CC():
-{}
+{
+    Token t;
+}
 {
     //scanf '(' id ')';
-    <SCANF_TO> <LPARENTHESES_TO> <ID_TO> <RPARENTHESES_TO> <FENHAO_TO>{
+    <SCANF_TO> <LPARENTHESES_TO> t=<ID_TO> <RPARENTHESES_TO> <FENHAO_TO>{
         MiddleCodeItem item = new MiddleCodeItem(MiddleCodeItem.CodeType.RED,0,0);
         middleCodeList.add(item);
+        getVariableById(t,1);
     }
 }
 
@@ -449,8 +521,13 @@ void Divisor_CC():
 
 /** 自定义函数调用 */
 void DefinitionFunction_CC():
-{}
+{
+    Token t;
+}
 {
     //id '(' ')'
-    <ID_TO> <LPARENTHESES_TO> <RPARENTHESES_TO>
+    t=<ID_TO> <LPARENTHESES_TO> <RPARENTHESES_TO>
+    {
+        getFunctionById(t);
+    }
 }
