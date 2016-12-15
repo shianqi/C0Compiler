@@ -2,23 +2,161 @@
  * All rights reserved.
  */
 
-
 PARSER_BEGIN(Compiler)
-
+import java.io.FileInputStream;
+import java.io.InputStream;
+import java.util.ArrayList;
 /** Simple brace matcher. */
 public class Compiler {
+    /** Main entry point. */
+    public static void main(String args[]) throws ParseException {
+        try {
+            InputStream inputstream = new FileInputStream("D://test1.txt");
+            Compiler parser = new Compiler(inputstream);
+            parser.procedure();
+        }catch (Exception e){
+            System.out.println("file open fill!");
+        }
+    }
+    /** 全局空间字母表 */
+    public static ArrayList<SymbolItem> listMain = new ArrayList();
+    /** 分程序空间字母表 */
+    public static ArrayList<SymbolItem> listPart = new ArrayList();
+    /** 中间代码表 */
+    public static ArrayList<MiddleCodeItem> middleCodeList = new ArrayList();
+    /** 返回标志 */
+    public static boolean returnFlag = false;
+    /** 
+     * 向字母表中添加字母
+     * @param int 0-全局空间 1-函数内空间
+     */
+    public static void addSymbolList(Token t,int type){
+        SymbolItem symbolItem = new SymbolItem(SymbolItem.SymbolType.intSym);
+        symbolItem.setName(t.image);
+        symbolItem.setLevel(type);
+        if(type==0){
+            for(int i=0;i<listMain.size();i++){
+                if(listMain.get(i).getName().equals(symbolItem.getName())){
+                    ExError.ShowErrMsg(3,"The variable "+symbolItem.getName()+" has already been defined");
+                }
+            }
+            listMain.add(symbolItem);
+        }else{
+            for(int i=0;i<listPart.size();i++){
+                if(listPart.get(i).getName().equals(symbolItem.getName())){
+                    ExError.ShowErrMsg(3,"The variable "+symbolItem.getName()+" has already been defined");
+                }
+            }
+            listPart.add(symbolItem);
+        }
+    }
+    /** 
+     * 输出字母表 
+     * @param int 0-全局空间 1-函数内空间
+     */
+    public static void askForSpace(int type){
+        if(type==0){
+            MiddleCodeItem item = new MiddleCodeItem(MiddleCodeItem.CodeType.INT,0,listMain.size());
+            middleCodeList.add(item);
+            callMainFunction();
+        }else{
+            int newVarSize = 0;
+            for(int i=0;i<listPart.size();i++){
+                if(listPart.get(i).getType()==SymbolItem.SymbolType.intSym){
+                    newVarSize++;
+                }else{
+                    newVarSize = 0;
+                }
+            }
+            MiddleCodeItem item = new MiddleCodeItem(MiddleCodeItem.CodeType.INT,0,newVarSize);
+            middleCodeList.add(item);
+        }
+    }
+    /**
+     * 全局变量定义完调用主函数
+     */
+    public static void callMainFunction(){
+        MiddleCodeItem item = new MiddleCodeItem(MiddleCodeItem.CodeType.CAL,0,0);
+        middleCodeList.add(item);
+        MiddleCodeItem item2 = new MiddleCodeItem(MiddleCodeItem.CodeType.RET,0,0);
+        middleCodeList.add(item2);
+    }
+    /**
+     * 输出中间代码表
+     */
+    public static void outPutMiddleCodeList(){
+        for(int i=0;i<middleCodeList.size();i++){
+            MiddleCodeItem m = middleCodeList.get(i);
+            System.out.println("**"+m.toString());
+        }
+    }
+    /** 
+     * 添加自定义函数 
+     * @param int 1-return int          0-return void
+     */
+    public static void addPartFunction(Token t,int type){
+        SymbolItem symbolItem = new SymbolItem(SymbolItem.SymbolType.functionSym);
+        symbolItem.setName(t.image);
+        symbolItem.setReturnType(type);
+        symbolItem.setAdr(middleCodeList.size());
+        listPart.add(symbolItem);
+    }
 
-  /** Main entry point. */
-  public static void main(String args[]) throws ParseException {
-    Compiler parser = new Compiler(System.in);
-    parser.procedure();
-  }
-
+    /**
+     * 在单词表中寻找变量
+     * @param type 0-取变量 1-赋值
+     */
+    public static void getVariableById(Token t, int type){
+        String id = t.image;
+        int lastFunction = 0;
+        for(int i=listPart.size()-1;i>-1;i--){
+            if(listPart.get(i).getType()==SymbolItem.SymbolType.functionSym){
+                lastFunction = i;
+                break;
+            }
+        }
+        int relative = 1;
+        boolean isFind = false;
+        for (int i=lastFunction;i<listPart.size();i++) {
+            if(listPart.get(i).getType()==SymbolItem.SymbolType.intSym){
+                relative++;
+                if(listPart.get(i).getName().equals(id)){
+                    isFind = true;
+                    break;
+                }
+            }
+        }
+        if(isFind){
+            if(type==0){
+                MiddleCodeItem item = new MiddleCodeItem(MiddleCodeItem.CodeType.LOD,1,relative);
+                middleCodeList.add(item);
+            }else{
+                MiddleCodeItem item = new MiddleCodeItem(MiddleCodeItem.CodeType.STO,1,relative);
+                middleCodeList.add(item);
+            }
+        }else{
+            relative = -1;
+            for(int i=0;i<listMain.size();i++){
+                relative++;
+                if(listMain.get(i).getName().equals(id)){
+                    if(type==0){
+                MiddleCodeItem item = new MiddleCodeItem(MiddleCodeItem.CodeType.LOD,0,relative);
+                middleCodeList.add(item);
+            }else{
+                MiddleCodeItem item = new MiddleCodeItem(MiddleCodeItem.CodeType.STO,0,relative);
+                middleCodeList.add(item);
+            }
+                    return;
+                }
+            }
+            ExError.ShowErrMsg(3,"The variable "+id+" was not defined");
+        }
+    }
 }
 
 PARSER_END(Compiler)
 
-/** 空字符过滤*/
+/** 空字符过滤 */
 SKIP:
 {
 " " | "\t" | "\n" | "\r"
@@ -77,25 +215,42 @@ void procedure() :
 {}
 {
     //[<变量定义部分>] {<自定义函数定义部分>} <主函数>
-    [LOOKAHEAD(2)VarDefinition_CC()] ( LOOKAHEAD(2)FunctionDefinition_CC() )* MainFunction_CC() <EOF>
+    [LOOKAHEAD(2)VarDefinition_CC(0)] ( LOOKAHEAD(2)FunctionDefinition_CC() )* MainFunction_CC() <EOF>{outPutMiddleCodeList();}
 }
 
 /** 变量定义部分. */
-void VarDefinition_CC() :
-{}
+void VarDefinition_CC(int type) :
+{
+    Token s;
+}
 {
     //int id {, id};
-    <INT_TO> <ID_TO> (<DOUHAO_TO> <ID_TO>)* <FENHAO_TO>
+    <INT_TO>
+    s=<ID_TO>{
+        addSymbolList(s,type);
+    }
+    (<DOUHAO_TO>
+    s=<ID_TO>{
+        addSymbolList(s,type);
+    })* <FENHAO_TO>{
+        askForSpace(type);
+    }
 }
 
 /** 自定义函数定义部分. */
 void FunctionDefinition_CC() :
 {
-
+    Token s;
+    int type;
 }
 {
     //( int id | void id) '(' ')' <分程序>
-    (<INT_TO> <ID_TO> | <VOID_TO> <ID_TO>) <LPARENTHESES_TO> <RPARENTHESES_TO> PartProgram_CC()
+    (<INT_TO>{type = 1;} s=<ID_TO> | <VOID_TO>{type = 0;} s=<ID_TO>) 
+    <LPARENTHESES_TO> <RPARENTHESES_TO>
+    {
+        addPartFunction(s,type);
+    }
+    PartProgram_CC()
 }
 
 /** 主函数部分 */
@@ -106,12 +261,26 @@ void MainFunction_CC() :
     <VOID_TO> <MAIN_TO> <LPARENTHESES_TO> <RPARENTHESES_TO> PartProgram_CC()
 }
 
-/** 分程序 */
+/** 
+ * 分程序
+ * 如果分程序没有返回值，则自动补上返回值
+ */
 void PartProgram_CC():
 {}
 {
     //'{' [<变量定义部分>] <语句序列> '}'
-    <LBRACE_TO> [LOOKAHEAD(2)VarDefinition_CC()] WordList_CC() <RBRACE_TO>
+    <LBRACE_TO>
+    {
+        returnFlag = false;
+    } 
+    [LOOKAHEAD(2)VarDefinition_CC(1)] WordList_CC() 
+    <RBRACE_TO>
+    {
+        if(!returnFlag){
+            MiddleCodeItem item = new MiddleCodeItem(MiddleCodeItem.CodeType.RET,0,0);
+            middleCodeList.add(item);
+        }
+    }
 }
 
 /** 语句序列 */
@@ -138,7 +307,7 @@ void Word_CC():
     |
     EvaluateWord_CC()
     |
-    ReturnWord_CC()
+    ReturnWord_CC(){returnFlag=true;}
     |
     ScanfWord_CC()
     |
@@ -173,10 +342,14 @@ void DefinitionFunctionCallWord_CC():
 
 /** 赋值语句 */
 void EvaluateWord_CC():
-{}
+{
+    Token t;
+}
 {
     //id = <表达式>;
-    <ID_TO> <DENGHAO_TO> Expression_CC() <FENHAO_TO>
+    t=<ID_TO> <DENGHAO_TO> Expression_CC() <FENHAO_TO>{
+        getVariableById(t,1);
+    }
 }
 
 /** 返回语句 */
@@ -184,7 +357,10 @@ void ReturnWord_CC():
 {}
 {
     //return ['(' <表达式> ')'] ;
-    <RETURN_TO> [<LPARENTHESES_TO> Expression_CC() <RPARENTHESES_TO>] <FENHAO_TO>
+    <RETURN_TO> [<LPARENTHESES_TO> Expression_CC() <RPARENTHESES_TO>] <FENHAO_TO>{
+        MiddleCodeItem item = new MiddleCodeItem(MiddleCodeItem.CodeType.RET,0,0);
+        middleCodeList.add(item);
+    }
 }
 
 /** 读语句 */
@@ -192,7 +368,10 @@ void ScanfWord_CC():
 {}
 {
     //scanf '(' id ')';
-    <SCANF_TO> <LPARENTHESES_TO> <ID_TO> <RPARENTHESES_TO> <FENHAO_TO>
+    <SCANF_TO> <LPARENTHESES_TO> <ID_TO> <RPARENTHESES_TO> <FENHAO_TO>{
+        MiddleCodeItem item = new MiddleCodeItem(MiddleCodeItem.CodeType.RED,0,0);
+        middleCodeList.add(item);
+    }
 }
 
 /** 写语句 */
@@ -200,15 +379,30 @@ void PrintfWord_CC():
 {}
 {
     // printf '(' [ <表达式>] ')';
-    <PRINTF_TO> <LPARENTHESES_TO> [Expression_CC()] <RPARENTHESES_TO> <FENHAO_TO>
+    <PRINTF_TO> <LPARENTHESES_TO> [Expression_CC()] <RPARENTHESES_TO> <FENHAO_TO>{
+        MiddleCodeItem item = new MiddleCodeItem(MiddleCodeItem.CodeType.WRT,0,0);
+        middleCodeList.add(item);
+    }
 }
 
 /** 表达式 */
 void Expression_CC():
-{}
+{
+    Token t;
+}
 {
     //[+｜-] <项> { (+｜-) <项>}
-    [<JIAHAO_TO>|<JIANHAO_TO>] Sum_CC() ( (<JIAHAO_TO>|<JIANHAO_TO>) Sum_CC())*
+    [<JIAHAO_TO>|<JIANHAO_TO>] Sum_CC() ( (
+    t=<JIAHAO_TO>|t=<JIANHAO_TO>) Sum_CC()
+    {
+        if(t.image.equals("+")){
+            MiddleCodeItem item = new MiddleCodeItem(MiddleCodeItem.CodeType.ADD,0,0);
+            middleCodeList.add(item);
+        }else{
+            MiddleCodeItem item = new MiddleCodeItem(MiddleCodeItem.CodeType.SUB,0,0);
+            middleCodeList.add(item);
+        }
+    })*
 }
 
 /** 项 */
@@ -216,21 +410,41 @@ void Sum_CC():
 {}
 {
     //<因子>｛(*｜/) <因子>｝
-    Divisor_CC() ((<CHENGHAO_TO> | <CHUHAO_TO>) Divisor_CC())*
+    Divisor_CC() ((
+    <CHENGHAO_TO>
+    {
+        MiddleCodeItem item = new MiddleCodeItem(MiddleCodeItem.CodeType.MUL,0,0);
+        middleCodeList.add(item);
+    } 
+    |
+    <CHUHAO_TO>
+    {
+        MiddleCodeItem item = new MiddleCodeItem(MiddleCodeItem.CodeType.DIV,0,0);
+        middleCodeList.add(item);
+    }
+    ) Divisor_CC())*
 }
 
 /** 因子 */
 void Divisor_CC():
-{}
 {
-    //id｜'(' <表达式>')' | num | <自定义函数调用>
+    Token s;
+}
+{
+    //<自定义函数调用> | '(' <表达式>')' | num | id
     LOOKAHEAD(2)DefinitionFunction_CC()
     |
     <LPARENTHESES_TO> Expression_CC() <RPARENTHESES_TO>
     |
-    <NUM_TO>
+    s=<NUM_TO>{
+        MiddleCodeItem item = new MiddleCodeItem(MiddleCodeItem.CodeType.LIT,0,Integer.parseInt(s.image));
+        middleCodeList.add(item);
+    }
     |
-    LOOKAHEAD(2)<ID_TO>
+    LOOKAHEAD(2)s=<ID_TO>
+    {
+        getVariableById(s,0);
+    }
 }
 
 /** 自定义函数调用 */

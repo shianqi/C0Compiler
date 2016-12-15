@@ -1,0 +1,12 @@
+{
+  "name": "javacc",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start" : "java -cp C://javacc-6.0//bin//lib//javacc.jar javacc Compiler.jj & javac Compiler.java & java Compiler"
+  },
+  "author": "",
+  "license": "ISC"
+}
