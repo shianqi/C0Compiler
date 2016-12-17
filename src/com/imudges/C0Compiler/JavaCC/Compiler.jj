@@ -16,7 +16,7 @@ public class Compiler {
             Compiler parser = new Compiler(inputstream);
             parser.procedure();
         }catch (Exception e){
-            System.out.println("file open fill!");
+            System.out.println("Compiler Error!");
         }
     }
     /** 全局空间字母表 */
@@ -29,7 +29,7 @@ public class Compiler {
     public static boolean returnFlag = false;
     /** 
      * 向字母表中添加字母
-     * @param int 0-全局空间 1-函数内空间
+     * @param type 0-全局空间 1-函数内空间
      */
     public static void addSymbolList(Token t,int type){
         SymbolItem symbolItem = new SymbolItem(SymbolItem.SymbolType.intSym);
@@ -53,7 +53,7 @@ public class Compiler {
     }
     /** 
      * 输出字母表 
-     * @param int 0-全局空间 1-函数内空间
+     * @param type 0-全局空间 1-函数内空间
      */
     public static void askForSpace(int type){
         if(type==0){
@@ -369,10 +369,32 @@ void Word_CC():
 
 /** 条件语句 */
 void IfWord_CC():
-{}
+{
+    int jpcAdress;
+    int jmpAdress;
+}
 {
     //if '('<表达式>')' <语句> [else <语句> ]
-    <IF_TO> <LPARENTHESES_TO> Expression_CC() <RPARENTHESES_TO> Word_CC() [LOOKAHEAD(2) <ELSE_TO> Word_CC()]
+    <IF_TO> <LPARENTHESES_TO> 
+    Expression_CC()
+    {
+        MiddleCodeItem item = new MiddleCodeItem(MiddleCodeItem.CodeType.JPC,0,0);
+        middleCodeList.add(item);
+        jpcAdress = middleCodeList.size()-1;
+    }
+    <RPARENTHESES_TO> 
+    Word_CC()
+    {
+        MiddleCodeItem item2 = new MiddleCodeItem(MiddleCodeItem.CodeType.JMP,0,middleCodeList.size()+1);
+        middleCodeList.add(item2);
+        middleCodeList.get(jpcAdress).arg1 = middleCodeList.size();
+        jmpAdress = middleCodeList.size()-1;
+    }
+    [LOOKAHEAD(2)<ELSE_TO> Word_CC()
+    {
+        middleCodeList.get(jmpAdress).arg1 = middleCodeList.size();
+    }
+    ]
 }
 
 /** 循环语句 */
