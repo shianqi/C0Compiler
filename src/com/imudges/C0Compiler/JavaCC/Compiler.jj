@@ -16,13 +16,15 @@ public class Compiler {
             Compiler parser = new Compiler(inputstream);
             parser.procedure();
         }catch (Exception e){
-            System.out.println("Compiler Error!");
+            System.err.println(e);
         }
     }
     /** 全局空间字母表 */
     public static ArrayList<SymbolItem> listMain = new ArrayList();
     /** 分程序空间字母表 */
     public static ArrayList<SymbolItem> listPart = new ArrayList();
+    /** 超前调用字母表 */
+    public static ArrayList<SymbolItem> listOutstrip = new ArrayList();
     /** 中间代码表 */
     public static ArrayList<MiddleCodeItem> middleCodeList = new ArrayList();
     /** 返回标志 */
@@ -38,14 +40,22 @@ public class Compiler {
         if(type==0){
             for(int i=0;i<listMain.size();i++){
                 if(listMain.get(i).getName().equals(symbolItem.getName())){
-                    ExError.ShowErrMsg(3,"The variable "+symbolItem.getName()+" has already been defined");
+                    ExError.ShowErrMsg(3,"The variable "+symbolItem.getName()+" has already been defined!--0");
                 }
             }
             listMain.add(symbolItem);
         }else{
-            for(int i=0;i<listPart.size();i++){
+            int lastFunction = 0;
+            for(int i=listPart.size()-1;i>-1;i--){
+                if(listPart.get(i).getType()==SymbolItem.SymbolType.functionSym){
+                    lastFunction = i;
+                    break;
+                }
+            }
+            for(int i=lastFunction;i<listPart.size();i++){
+
                 if(listPart.get(i).getName().equals(symbolItem.getName())){
-                    ExError.ShowErrMsg(3,"The variable "+symbolItem.getName()+" has already been defined");
+                    ExError.ShowErrMsg(3,"The variable "+symbolItem.getName()+" has already been defined!--1");
                 }
             }
             listPart.add(symbolItem);
@@ -98,6 +108,11 @@ public class Compiler {
         for(int i=0;i<listPart.size();i++){
             System.out.println("--"+i+"\t"+listPart.get(i).toString());
         }
+        System.out.println("----listOutstrip:");
+        for(int i=0;i<listOutstrip.size();i++){
+            String name = listOutstrip.get(i).getName();
+            ExError.ShowErrMsg(4,"The function "+name+" was not defined");
+        }
     }
     /**
      * 输出目标代码
@@ -118,6 +133,7 @@ public class Compiler {
     }
     /** 
      * 添加自定义函数 
+     * 添加后要检查是否超前调用
      * @param type 1-return int          0-return void
      */
     public static void addPartFunction(Token t,int type){
@@ -126,6 +142,15 @@ public class Compiler {
         symbolItem.setReturnType(type);
         symbolItem.setAdr(middleCodeList.size());
         listPart.add(symbolItem);
+
+        for(int i=0;i<listOutstrip.size();i++){
+            if(listOutstrip.get(i).getName().equals(t.image)){
+                SymbolItem sym = listOutstrip.get(i);
+                middleCodeList.get(sym.getAdr()).arg1 = middleCodeList.size();
+                listOutstrip.remove(i);
+                i--;
+            }
+        }
     }
 
     /**
@@ -178,6 +203,9 @@ public class Compiler {
             ExError.ShowErrMsg(3,"The variable "+id+" was not defined");
         }
     }
+    /**
+     * 在单词表中寻找函数
+     */
     public static void getFunctionById(Token t){
         for(int i=0;i<listPart.size();i++){
             SymbolItem item = listPart.get(i);
@@ -189,6 +217,14 @@ public class Compiler {
                 }
             }
         }
+        //如果单词表中没有该函数，则进行超前调用
+        SymbolItem symbolItem = new SymbolItem(SymbolItem.SymbolType.functionSym);
+        symbolItem.setName(t.image);
+        symbolItem.setAdr(middleCodeList.size());
+        listOutstrip.add(symbolItem);
+
+        MiddleCodeItem middleCodeItem = new MiddleCodeItem(MiddleCodeItem.CodeType.CAL,0,0);
+        middleCodeList.add(middleCodeItem);
     }
 }
 
@@ -301,13 +337,16 @@ void FunctionDefinition_CC() :
 
 /** 主函数部分 */
 void MainFunction_CC() :
-{}
+{
+    Token s;
+}
 {
     //void main'(' ')' <分程序>
-    <VOID_TO> <MAIN_TO> <LPARENTHESES_TO> <RPARENTHESES_TO>
+    <VOID_TO> s=<MAIN_TO> <LPARENTHESES_TO> <RPARENTHESES_TO>
     {
         int mainAddress = middleCodeList.size();
         middleCodeList.get(1).arg1 = mainAddress;
+        addPartFunction(s,0);
     }
     PartProgram_CC()
 }
@@ -428,7 +467,7 @@ void DefinitionFunctionCallWord_CC():
 {}
 {
     //<自定义函数调用>
-    FunctionDefinition_CC()
+    DefinitionFunction_CC()<FENHAO_TO>
 }
 
 /** 赋值语句 */

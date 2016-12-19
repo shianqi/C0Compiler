@@ -1,4 +1,4 @@
-package com.imudges.C0Compiler.JavaCC;
+// package com.imudges.C0Compiler.JavaCC;
 /**
  * @author shianqi@imudges.com
  * Created by shianqi on 2016/12/14.
@@ -8,6 +8,7 @@ public class ExError {
         ArithmeticException,    //算数异常
         InputParamErrException, //输入参数错误
         VariableException,      //变量异常
+        FunctionException,
         UnknowException         //未知错误
     }
     public static boolean errFlag=false;
@@ -16,6 +17,7 @@ public class ExError {
             case 1:{showMessage(ErrCode.ArithmeticException,errMsg);break;}
             case 2:{showMessage(ErrCode.InputParamErrException,errMsg);break;}
             case 3:{showMessage(ErrCode.VariableException,errMsg);break;}
+            case 4:{showMessage(ErrCode.FunctionException,errMsg);break;}
             default:{showMessage(ErrCode.VariableException,errMsg);break;}
         }
 
