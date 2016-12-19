@@ -13,7 +13,9 @@ public class Main {
     }
 
     private void init(){
-        Exe exe = new Exe();
-        exe.init();
+       /* Exe exe = new Exe();
+        exe.init();*/
+       Execute execute=new Execute();
+       execute.init();
     }
 }
