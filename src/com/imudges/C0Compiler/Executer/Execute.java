@@ -14,7 +14,7 @@ import java.util.Stack;
 public class Execute {
     //当前层数基地址
     private int baseAddress=0;
-    // 当前执行层数的标号
+    // 当前执行指令的标号
     private int currentIndex=0;
     //指令名
     private enum DictateName{
@@ -64,10 +64,10 @@ public class Execute {
     private void dictate_STO(int t,int a){
         if(t==0){
 
-            runStack.set(a, runStack.get(runStack.size()-1));
+            runStack.set(a, runStack.pop());
         }else{
             //不是0层，变量单元地址就是当前层的基地址+相对地址
-            runStack.set(baseAddress + a, runStack.get(runStack.size()-1));
+            runStack.set(baseAddress + a, runStack.pop());
         }
     }
 
@@ -75,7 +75,7 @@ public class Execute {
      * int 0 a
      * 在运行栈中为被调用的过程开辟a个单元的数据区
      * @param t 0
-     * @param a 数据区数量
+     * @param a 函数地址
      */
     private void dictate_CAL(int t,int a){
         //修改DL 和 RL
@@ -83,7 +83,7 @@ public class Execute {
         runStack.push(baseAddress);
         runStack.push(currentIndex+1);
         //更新当前层数基地址
-        //更新当前执行层数的标号
+        //更新当前执行指令的标号
         baseAddress = base;
         currentIndex = a - 1;
     }
@@ -180,6 +180,7 @@ public class Execute {
      * @param a 0
      */
     private void dictate_RED(int t, int a){
+
         runStack.push(scanner.nextInt());
     }
 

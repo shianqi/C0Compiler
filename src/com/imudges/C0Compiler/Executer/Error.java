@@ -14,6 +14,12 @@ public class Error {
         StackOverflowException,//栈溢出
     }
     public static boolean errFlag=false;
+
+    /**
+     *
+     * @param errCode
+     * @param errMsg
+     */
     public static void ShowErrMsg(int errCode,String errMsg){
         switch (errCode){
             case 1:{System.err.println("错误信息:"+ErrCode.ArithmeticException.toString()+" "+errMsg);errFlag=true;break;}
