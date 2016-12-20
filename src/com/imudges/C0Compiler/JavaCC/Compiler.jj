@@ -29,6 +29,7 @@ public class Compiler {
     public static ArrayList<MiddleCodeItem> middleCodeList = new ArrayList();
     /** 返回标志 */
     public static boolean returnFlag = false;
+    public static int returnFlagType = 0;
     /** 
      * 向字母表中添加字母
      * @param type 0-全局空间 1-函数内空间
@@ -191,12 +192,12 @@ public class Compiler {
                 relative++;
                 if(listMain.get(i).getName().equals(id)){
                     if(type==0){
-                MiddleCodeItem item = new MiddleCodeItem(MiddleCodeItem.CodeType.LOD,0,relative);
-                middleCodeList.add(item);
-            }else{
-                MiddleCodeItem item = new MiddleCodeItem(MiddleCodeItem.CodeType.STO,0,relative);
-                middleCodeList.add(item);
-            }
+                        MiddleCodeItem item = new MiddleCodeItem(MiddleCodeItem.CodeType.LOD,0,relative);
+                        middleCodeList.add(item);
+                    }else{
+                        MiddleCodeItem item = new MiddleCodeItem(MiddleCodeItem.CodeType.STO,0,relative);
+                        middleCodeList.add(item);
+                    }
                     return;
                 }
             }
@@ -327,7 +328,16 @@ void FunctionDefinition_CC() :
 }
 {
     //( int id | void id) '(' ')' <分程序>
-    (<INT_TO>{type = 1;} s=<ID_TO> | <VOID_TO>{type = 0;} s=<ID_TO>) 
+    (<INT_TO>
+    {
+        type = 1;
+        returnFlagType = 1;
+    } 
+    s=<ID_TO> | <VOID_TO>
+    {
+        type = 0;
+        returnFlagType = 0;
+    } s=<ID_TO>) 
     <LPARENTHESES_TO> <RPARENTHESES_TO>
     {
         addPartFunction(s,type);
@@ -344,6 +354,7 @@ void MainFunction_CC() :
     //void main'(' ')' <分程序>
     <VOID_TO> s=<MAIN_TO> <LPARENTHESES_TO> <RPARENTHESES_TO>
     {
+        returnFlagType = 0;
         int mainAddress = middleCodeList.size();
         middleCodeList.get(1).arg1 = mainAddress;
         addPartFunction(s,0);
@@ -484,10 +495,21 @@ void EvaluateWord_CC():
 
 /** 返回语句 */
 void ReturnWord_CC():
-{}
+{
+    int flag=0;
+}
 {
     //return ['(' <表达式> ')'] ;
-    <RETURN_TO> [<LPARENTHESES_TO> Expression_CC() <RPARENTHESES_TO>] <FENHAO_TO>{
+    <RETURN_TO> [<LPARENTHESES_TO> Expression_CC()
+    {
+        flag = 1;
+    }
+    <RPARENTHESES_TO>] <FENHAO_TO>{
+        if(returnFlagType==0&&flag==1){
+            ExError.ShowErrMsg(4,"This function must return null");
+        }else if(returnFlagType==1&&flag==0){
+            ExError.ShowErrMsg(4,"This function must return int");
+        }
         MiddleCodeItem item = new MiddleCodeItem(MiddleCodeItem.CodeType.RET,0,0);
         middleCodeList.add(item);
     }
