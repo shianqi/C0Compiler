@@ -69,7 +69,9 @@
     ```
     <自定义函数调用> -> id '(' ')'
     ```
+    
     则可以在`JavaCC` 中翻译成如下的函数调用。
+    
     ```
     /** 自定义函数调用 */
     void DefinitionFunction_CC():
@@ -85,16 +87,21 @@
     当子程序全部编辑完成后，就可以进行代码生成测试了。<br>
 
     使用如下命令进行代码生成
+    
     ```
     java -cp C://javacc-6.0//bin//lib//javacc.jar javacc Compiler.jj
     ```
+    
     之后就生成了相应的 `*.java` 文件。<br>
     还需要进行编译。
+    
     ```
     javac Compiler.java
     ```
+    
     之后就得到了程序的二进制文件了<br>
     运行如下命令进行执行。
+    
     ```
     java Compiler
     ```
@@ -111,13 +118,17 @@
     
 * ### 语法分析正确性测试
     在执行上一步的函数后，可以先将 `Compiler.jj` 中 `16` 行的代码
+    
     ```
     Compiler parser = new Compiler(inputstream);
     ```
+    
     替换为
+    
     ```
     Compiler parser = new Compiler(System.in);
     ```
+    
     则可以进行一个符号一个符号的分析。检查验证语法分析程序的正确性。
     
 # 语义分析模块
@@ -126,6 +137,7 @@
     此处语义分析是在上一步语法分析生成的语法树基础上进行的。在合适的地方插入
     相应的处理代码进行语义分析 <br>
     例如：
+    
     ```
     /** 自定义函数调用 */
     void DefinitionFunction_CC():
@@ -172,12 +184,33 @@
 
 # 中间代码生成模块
 
+* ### 全局空间字母表
+    
+    用于存放程序中全局变量信息的表格
+
+* ### 分程序空间字母表
+    
+    用于存放函数和函数中的变量信息的表格
+    
+* ### 超前调用字母表
+    
+    用于存放超前调用的函数信息的表格
+    
+* ### 中间代码表
+    
+    用于存放中间码的表格
+
 # 目标代码生成模块
+
+* ### 检测超前调用表
+    如果超前调用表中仍然存在函数，则说明该函数被使用，但是
+    该函数并没有被初始化。所以要报出相应的错误信息。
 
 # 错误处理模块
 * ### 错误处理模块调用的接口为：
+
     ```
-        @param errCode 错误号
-        @param errMsg 错误信息
-        public static void ShowErrMsg(int errCode,String errMsg)
+    @param errCode 错误号
+    @param errMsg 错误信息
+    public static void ShowErrMsg(int errCode,String errMsg)
     ```
